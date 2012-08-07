@@ -21,7 +21,7 @@ class TransactionModelTests(TestCase, XmlTestingMixin):
             date_created=None
             )
 
-    def test_unicode(self):
+    def test_unicode_string_formatting(self):
         self.assertTrue('Purchase txn for order 1000 - ref: 0000000600fdd28e,',
             ' message: The Transaction was approved' in str(self.txn))
 
@@ -29,7 +29,7 @@ class TransactionModelTests(TestCase, XmlTestingMixin):
         doc = parseString(self.txn.request_xml)
         self.assertXmlElementEquals(doc, 'XXXXXXXXXXXX1111', 'Txn.CardNumber')
 
-    def test_cvn_numbers_are_not_saved_in_xml(self):
+    def test_cvv_numbers_are_not_saved_in_xml(self):
         doc = parseString(self.txn.request_xml)
         self.assertXmlElementEquals(doc, 'XXX', 'Txn.Cvc2')
 
