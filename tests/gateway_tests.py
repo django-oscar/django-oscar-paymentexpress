@@ -1,9 +1,12 @@
-from unittest import TestCase
-from paymentexpress.gateway import Request, Response, Gateway
+from django.test import TestCase
+from mock import patch, Mock
+from paymentexpress.gateway import Request, Response, Gateway, AUTH
 from xml.dom.minidom import parseString, Document
 from tests import (XmlTestingMixin,
+                   SAMPLE_PURCHASE_REQUEST,
                    SAMPLE_DECLINED_RESPONSE,
-                   SAMPLE_SUCCESSFUL_RESPONSE
+                   SAMPLE_SUCCESSFUL_RESPONSE,
+                   CARD_VISA,
                    )
 
 
@@ -51,6 +54,11 @@ class ResponseTests(TestCase):
         r = Response('', '<?xml version="1.0" ?>')
         self.assertFalse(r.is_successful())
 
+    def test_element_text_returns_blank_on_none(self):
+        r = Response('', '<Txn><Transaction success="1" reco="00"' +
+            ' responseText="APPROVED" pxTxn="true" /></Txn>')
+        self.assertEquals(r['authorised'], 0)
+
 
 class SuccessfulResponseTests(TestCase):
 
@@ -88,7 +96,8 @@ class GatewayTests(TestCase):
     gateway = None
 
     def setUp(self):
-        self.gateway = Gateway('hostname', 'TangentSnowball', 's3cr3t', 'AUD')
+        self.gateway = Gateway('http://localhost/', 'TangentSnowball',
+            's3cr3t', 'AUD')
 
     def test_raises_error_on_missing_fields(self):
         with self.assertRaises(ValueError):
@@ -104,7 +113,51 @@ class GatewayTests(TestCase):
     def test_authorise_fields_set(self):
         self.gateway.authorise(card_holder='Frankie',
                                card_number='5111222233334444',
-                               cvn='123',
+                               cvc2='123',
                                amount=1.23)
         with self.assertRaises(ValueError):
             self.gateway.authorise()
+
+    def test_amount_is_always_required(self):
+        r = self.gateway._get_request(AUTH, {'card_holder': 'Frankie',
+                                         'amount': 1.23
+                                        }, ['amount', ], )
+        self.assertIsInstance(r, Request)
+        with self.assertRaises(ValueError):
+            self.gateway._get_request(AUTH, {'card_holder': 'Frankie'}, [],)
+
+    def test_get_message_returns_help_text(self):
+        r = Response(SAMPLE_PURCHASE_REQUEST, SAMPLE_SUCCESSFUL_RESPONSE)
+        self.assertTrue(r.get_message() is not None)
+
+    def test_complete_requires_dps_txn_ref(self):
+        with self.assertRaises(ValueError):
+            self.gateway.complete()
+
+    def test_amount_always_greater_than_zero(self):
+        self.gateway.complete(dps_txn_ref="1234", amount=1.23)
+        with self.assertRaises(ValueError):
+            self.gateway.authorise(card_holder="Frankie",
+                                   card_number=CARD_VISA,
+                                   cvc2="123",
+                                   amount=0.00)
+            self.gateway.complete(dps_txn_ref="1234", amount=0)
+
+    def test_card_expiry_has_four_digits(self):
+        self.gateway.validate(card_holder="Frankie",
+                                  card_number=CARD_VISA,
+                                  cvc2="123",
+                                  card_expiry="1015",
+                                  amount=1.00)
+        with self.assertRaises(ValueError):
+            self.gateway.validate(card_holder="Frankie",
+                                  card_number=CARD_VISA,
+                                  cvc2="123",
+                                  card_expiry="10/15",
+                                  amount=1.00)
+
+    def test_currency_code_has_three_characters(self):
+        gateway = Gateway('http://localhost/', 'TangentSnowball',
+            's3cr3t', 'au')
+        with self.assertRaises(ValueError):
+            gateway.refund(dps_txn_ref="abc", merchant_ref="123")

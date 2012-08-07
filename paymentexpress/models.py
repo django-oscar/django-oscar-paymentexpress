@@ -2,9 +2,11 @@ from django.db import models
 from xml.dom.minidom import parseString
 import re
 
+
 def pretty_print_xml(xml_string):
     line_regex = re.compile(r'\n\n')
     return line_regex.sub('', parseString(xml_string).toprettyxml())
+
 
 class OrderTransaction(models.Model):
 

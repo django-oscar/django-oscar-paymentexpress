@@ -1,4 +1,4 @@
-from unittest import TestCase
+from django.test import TestCase
 from tests import (XmlTestingMixin,
                    SAMPLE_PURCHASE_REQUEST,
                    SAMPLE_SUCCESSFUL_RESPONSE)

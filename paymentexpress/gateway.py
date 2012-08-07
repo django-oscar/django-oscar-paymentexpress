@@ -1,5 +1,7 @@
 from xml.dom.minidom import parseString, Document
 from xml.parsers.expat import ExpatError
+import requests
+import re
 
 # Methods
 
@@ -37,7 +39,8 @@ class Request(object):
             # Card details
             'card_holder': 'CardHolderName',
             'card_number': 'CardNumber',
-            'cvn': 'Cvc2',
+            'cvc2': 'Cvc2',
+            'card_issue_date': 'DateStart',
             'card_expiry': 'DateExpiry',
 
             'billing_id': 'BillingId',
@@ -52,7 +55,6 @@ class Request(object):
             'avs_action': 'AvsAction',
             'avs_postcode': 'AvsPostCode',
             'avs_street_address': 'AvsStreetAddress',
-            'date_start': 'DateStart',
             'issue_number': 'IssueNumber',
             'track2': 'Track2',
         }
@@ -121,12 +123,14 @@ class Response(object):
             return None
 
         doc = parseString(response_xml)
+        success = self._get_transaction_attribute(doc, 'success')
+        authorised = self._get_element_text(doc, 'Authorized')
         data = {
-            'success': int(self._get_transaction_attribute(doc, 'success')),
+            'success': int(success) if success else 0,
             'response_code': self._get_transaction_attribute(doc, 'reco'),
             'response_text': self._get_transaction_attribute(doc,
                 'responseText'),
-            'authorised': int(self._get_element_text(doc, 'Authorized')),
+            'authorised': int(authorised) if authorised else 0,
             'auth_code': self._get_element_text(doc, 'AuthCode'),
             'txn_ref': self._get_element_text(doc, 'TxnRef'),
             'dps_txn_ref': self._get_element_text(doc, 'DpsTxnRef'),
@@ -145,18 +149,14 @@ class Response(object):
 
     def _get_transaction_attribute(self, doc, attr):
         ele = self._try_get_element(doc, 'Transaction')
-        if ele is None:
-            return None
-        if ele.attributes is None:
-            return None
+        if ele is None or ele.attributes is None:
+            return ''
         return ele.attributes.get(attr).value
 
     def _get_element_text(self, doc, tag):
         ele = self._try_get_element(doc, tag)
-        if ele is None:
-            return None
-        if ele.firstChild is None:
-            return None
+        if ele is None or ele.firstChild is None:
+            return ''
         return ele.firstChild.data
 
     def get_message(self):
@@ -179,22 +179,38 @@ class Gateway(object):
     Transport class used to send PaymentExpress requests
     """
 
-    def __init__(self, host, username, password, currency):
-        self.host = host
+    def __init__(self, post_url, username, password, currency):
+        self.post_url = post_url
         self.username = username
         self.password = password
         self.currency = currency
 
-    def _do_request(self, request):
+    def _fetch_response(self, request):
         """
         Sends the request
         """
         self._check_kwargs(request.data, request.required_keys)
+        response = requests.post(
+            self.post_url,
+            request.request_xml,
+            auth=(self.username, self.password)
+        )
+        return Response(request.request_xml, response.text)
 
     def _check_kwargs(self, kwargs, required_keys):
         for key in required_keys:
             if key not in kwargs:
                 raise ValueError('You must provide a "%s" argument' % key)
+
+        for key in kwargs:
+            value = kwargs[key]
+            if key == 'currency' and not re.match(r'^[A-Z]{3}$', value):
+                raise ValueError('Currency code must be a 3 character code')
+            if key == 'amount' and value == 0:
+                raise ValueError('Amount must be non-zero')
+            if key in ('card_issue_date', 'card_expiry') \
+                and not re.match(r'^(0[1-9]|1[012])([0-9]{2})$', value):
+                raise ValueError('%s must be in format mmyy' % key)
 
     def _get_request(self, txn_type, kwargs, required_keys):
         if 'amount' not in required_keys:
@@ -204,7 +220,7 @@ class Gateway(object):
         request = Request(self.username,
                        self.password,
                        self.currency,
-                       kwargs.get('txn_type'),
+                       txn_type,
                        kwargs.get('amount'))
         for key in required_keys:
             request.set_element(key, kwargs.get(key))
@@ -216,9 +232,9 @@ class Gateway(object):
         Must be completed within 7 days using the "Complete" TxnType
         """
         request = self._get_request(AUTH, kwargs, [
-            'card_holder', 'card_number', 'cvn', 'amount',
+            'card_holder', 'card_number', 'cvc2', 'amount',
         ])
-        self._do_request(request)
+        return self._fetch_response(request)
 
     def complete(self, **kwargs):
         """
@@ -227,27 +243,26 @@ class Gateway(object):
         must be supplied.
         """
         request = self._get_request(COMPLETE, kwargs, ['dps_txn_ref', ])
-        self._do_request(request)
+        return self._fetch_response(request)
 
     def purchase(self, **kwargs):
         """
         Purchase - Funds are transferred immediately.
         """
         if kwargs.get('billing_id') is None:
-            self._purchase_on_new_card(kwargs)
-        else:
-            self._purchase_on_existing_card(kwargs)
+            return self._purchase_on_new_card(**kwargs)
+        return self._purchase_on_existing_card(**kwargs)
 
     def _purchase_on_new_card(self, **kwargs):
         request = self._get_request(PURCHASE, kwargs, [
-            'card_holder', 'card_number', 'card_expiry', 'cvn',
-            'merchant_ref', 'enable_add_bill_card', 'billing_id'
+            'card_holder', 'card_number', 'card_expiry', 'cvc2',
+            'merchant_ref', 'enable_add_bill_card',
         ])
-        self._do_request(request)
+        return self._fetch_response(request)
 
     def _purchase_on_existing_card(self, **kwargs):
         request = self._get_request(PURCHASE, kwargs, ['billing_id'])
-        self._do_request(request)
+        return self._fetch_response(request)
 
     def validate(self, **kwargs):
         """
@@ -257,9 +272,9 @@ class Gateway(object):
         automatically add to Billing Database if the transaction is approved.
         """
         request = self._get_request(AUTH, kwargs, [
-            'card_holder', 'card_number', 'cvn', 'card_expiry',
+            'card_holder', 'card_number', 'cvc2', 'card_expiry',
         ])
-        self._do_request(request)
+        return self._fetch_response(request)
 
     def refund(self, **kwargs):
         """
@@ -269,4 +284,4 @@ class Gateway(object):
         request = self._get_request(REFUND, kwargs, [
             'dps_txn_ref', 'merchant_ref',
         ])
-        self._do_request(request)
+        return self._fetch_response(request)
