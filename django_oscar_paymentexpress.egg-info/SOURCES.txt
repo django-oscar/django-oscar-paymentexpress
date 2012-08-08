@@ -1,9 +1,0 @@
-setup.py
-django_oscar_paymentexpress.egg-info/PKG-INFO
-django_oscar_paymentexpress.egg-info/SOURCES.txt
-django_oscar_paymentexpress.egg-info/dependency_links.txt
-django_oscar_paymentexpress.egg-info/requires.txt
-django_oscar_paymentexpress.egg-info/top_level.txt
-paymentexpress/__init__.py
-paymentexpress/gateway.py
-paymentexpress/tests.py

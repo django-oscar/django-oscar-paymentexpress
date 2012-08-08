@@ -1,1 +1,6 @@
+*.pyc
+*.egg-info
+*.DS_Store
+*.swp
+dist/
 htmlcov
