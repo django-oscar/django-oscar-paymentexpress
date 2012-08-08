@@ -21,7 +21,7 @@ class TransactionModelTests(TestCase, XmlTestingMixin):
             date_created=None
             )
 
-    def test_unicode_string_formatting(self):
+    def test_unicode_method_returns_formatted_string(self):
         self.assertTrue('Purchase txn for order 1000 - ref: 0000000600fdd28e,',
             ' message: The Transaction was approved' in str(self.txn))
 

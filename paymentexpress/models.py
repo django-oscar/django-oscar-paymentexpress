@@ -12,7 +12,7 @@ class OrderTransaction(models.Model):
 
     # Note we don't use a foreign key as the order hasn't been created
     # by the time the transaction takes place
-    order_number = models.CharField(max_length=128, db_index=True)
+    order_number = models.CharField(max_length=128, db_index=True, null=True)
 
     # Transaction type
     txn_type = models.CharField(max_length=12)
@@ -38,17 +38,16 @@ class OrderTransaction(models.Model):
     def save(self, *args, **kwargs):
         if not self.pk:
             cc_regex = re.compile(r'\d{12}')
-            self.request_xml = cc_regex.sub('XXXXXXXXXXXX',
-                                            self.request_xml
-                                            )
+            self.request_xml = cc_regex.sub('XXXXXXXXXXXX', self.request_xml)
             ccv_regex = re.compile(r'<Cvc2>\d+</Cvc2>')
+
             self.request_xml = ccv_regex.sub('<Cvc2>XXX</Cvc2>',
-                                             self.request_xml
-                                             )
+                                             self.request_xml)
+
             pw_regex = re.compile(r'<PostPassword>.*</PostPassword>')
             self.request_xml = pw_regex.sub('<PostPassword>XXX</PostPassword>',
-                                            self.request_xml
-                                            )
+                                            self.request_xml)
+
         super(OrderTransaction, self).save(*args, **kwargs)
 
     def __unicode__(self):
