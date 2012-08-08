@@ -51,7 +51,7 @@ SAMPLE_SUCCESSFUL_RESPONSE = """
         <GroupAccount>9997</GroupAccount>
         <DpsTxnRef>000000030884cdc6</DpsTxnRef>
         <AllowRetry>1</AllowRetry>
-        <DpsBillingId/>
+        <DpsBillingId>0000080023225598</DpsBillingId>
         <BillingId/>
         <TransactionId>0884cdc6</TransactionId>
         <PxHostId>00000003</PxHostId>
@@ -141,6 +141,81 @@ SAMPLE_DECLINED_RESPONSE = """
     <Success>0</Success>
     <DpsTxnRef>000000080985f6b6</DpsTxnRef>
     <TxnRef/>
+    <RmReason/>
+    <RmReasonId>0000000000000000</RmReasonId>
+    <RiskScore>-1</RiskScore>
+    <RiskScoreText/>
+</Txn>
+"""
+
+SAMPLE_ERROR_RESPONSE = """
+<Txn>
+    <Transaction success="0" reco="QG" responseText="INVALID TXNTYPE"
+        pxTxn="true">
+        <Authorized>0</Authorized>
+        <ReCo>QG</ReCo>
+        <RxDate>20120808054120</RxDate>
+        <RxDateLocal>20120808054120</RxDateLocal>
+        <LocalTimeZone>UTC</LocalTimeZone>
+        <MerchantReference>Test Transaction</MerchantReference>
+        <CardName/>
+        <Retry>0</Retry>
+        <StatusRequired>0</StatusRequired>
+        <AuthCode/>
+        <AmountBalance>0.00</AmountBalance>
+        <Amount>1.23</Amount>
+        <CurrencyId>0</CurrencyId>
+        <InputCurrencyId>0</InputCurrencyId>
+        <InputCurrencyName>AUD</InputCurrencyName>
+        <CurrencyRate>1.00</CurrencyRate>
+        <CurrencyName/>
+        <CardHolderName>A ANDERSON</CardHolderName>
+        <DateSettlement>19800101</DateSettlement>
+        <TxnType>Poopies</TxnType>
+        <CardNumber>411111........11</CardNumber>
+        <TxnMac/>
+        <DateExpiry>1015</DateExpiry>
+        <ProductId/>
+        <AcquirerDate/>
+        <AcquirerTime/>
+        <AcquirerId>0</AcquirerId>
+        <Acquirer/>
+        <AcquirerReCo>QG</AcquirerReCo>
+        <AcquirerResponseText>IvlTxnType</AcquirerResponseText>
+        <TestMode>0</TestMode>
+        <CardId>0</CardId>
+        <CardHolderResponseText>INVALID TXNTYPE</CardHolderResponseText>
+        <CardHolderHelpText>The transaction has not been processed.
+        </CardHolderHelpText>
+        <CardHolderResponseDescription>The transaction has not been processed.
+        </CardHolderResponseDescription>
+        <MerchantResponseText>INVALID TXNTYPE</MerchantResponseText>
+        <MerchantHelpText>TxnType must be "Purchase", "Auth", "Refund"
+        or "Complete"</MerchantHelpText>
+        <MerchantResponseDescription>TxnType must be "Purchase", "Auth",
+        "Refund" or "Complete"</MerchantResponseDescription>
+        <EnablePostResponse>0</EnablePostResponse>
+        <AcquirerPort>-</AcquirerPort>
+        <AcquirerTxnRef>0</AcquirerTxnRef>
+        <GroupAccount>-1</GroupAccount>
+        <DpsTxnRef/>
+        <AllowRetry>0</AllowRetry>
+        <DpsBillingId/>
+        <BillingId/>
+        <TransactionId>00000000</TransactionId>
+        <PxHostId>00000008</PxHostId>
+        <RmReason/>
+        <RmReasonId>0000000000000000</RmReasonId>
+        <RiskScore>-1</RiskScore>
+        <RiskScoreText/>
+    </Transaction>
+    <ReCo>QG</ReCo>
+    <ResponseText>INVALID TXNTYPE</ResponseText>
+    <HelpText>TxnType must be "Purchase", "Auth", "Refund" or "Complete"
+    </HelpText>
+    <Success>0</Success>
+    <DpsTxnRef/>
+    <TxnRef>inv1278</TxnRef>
     <RmReason/>
     <RmReasonId>0000000000000000</RmReasonId>
     <RiskScore>-1</RiskScore>

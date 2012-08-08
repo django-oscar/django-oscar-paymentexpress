@@ -11,6 +11,8 @@ PURCHASE = 'Purchase'
 REFUND = 'Refund'
 VALIDATE = 'Validate'
 
+UNABLE_TO_FULFILL_TRANSACTION = 'Unable to fulfill transaction'
+
 
 class Request(object):
     """
@@ -136,7 +138,10 @@ class Response(object):
             'dps_txn_ref': self._get_element_text(doc, 'DpsTxnRef'),
             'card_holder_help_text': self._get_element_text(doc,
                 'CardHolderHelpText'),
+            'card_holder_response_text': self._get_element_text(doc,
+                'CardHolderResponseText'),
             'help_text': self._get_element_text(doc, 'HelpText'),
+            'dps_billing_id': self._get_element_text(doc, 'DpsBillingId'),
         }
         return data
 
@@ -160,8 +165,10 @@ class Response(object):
         return ele.firstChild.data
 
     def get_message(self):
+        if self.data is None:
+            return UNABLE_TO_FULFILL_TRANSACTION
         message = self.data['card_holder_help_text']
-        if message is None:
+        if message is None or message == '':
             message = self.data['help_text']
         return message
 
@@ -172,6 +179,13 @@ class Response(object):
         if self.data is None:
             return False
         return self.data['success'] == 1 and self.data['authorised'] == 1
+
+    def is_declined(self):
+        if self.data is None:
+            return False
+        return self.data['success'] != 1 and \
+            self.data['authorised'] != 1 and \
+            self.data['card_holder_response_text'].startswith('DECLINED')
 
 
 class Gateway(object):

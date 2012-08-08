@@ -10,6 +10,16 @@ from tests import (XmlTestingMixin,
                    )
 
 
+class MockedResponseTestCase(TestCase):
+
+    def create_mock_response(self, body, status_code=200):
+        response = Mock()
+        response.content = body
+        response.text = body
+        response.status_code = status_code
+        return response
+
+
 class RequestTests(XmlTestingMixin, TestCase):
 
     def test_request_returns_valid_xml(self):
@@ -54,10 +64,38 @@ class ResponseTests(TestCase):
         r = Response('', '<?xml version="1.0" ?>')
         self.assertFalse(r.is_successful())
 
+    def test_is_declined_returns_false_on_empty_response(self):
+        r = Response('', '')
+        self.assertFalse(r.is_declined())
+
+        r = Response('', '<?xml version="1.0" ?>')
+        self.assertFalse(r.is_declined())
+
+    def test_is_declined_returns_true_on_declined_response(self):
+        r = Response('', SAMPLE_DECLINED_RESPONSE)
+        self.assertTrue(r.is_declined())
+
     def test_element_text_returns_blank_on_none(self):
         r = Response('', '<Txn><Transaction success="1" reco="00"' +
-            ' responseText="APPROVED" pxTxn="true" /></Txn>')
+                     ' responseText="APPROVED" pxTxn="true" /></Txn>')
         self.assertEquals(r['authorised'], 0)
+
+    def test_get_message_returns_help_text(self):
+        r = Response('', """
+            <Txn>
+            <Transaction success="1" reco="00"
+                responseText="APPROVED" pxTxn="true">
+                <CardHolderHelpText />
+            </Transaction>
+            <HelpText>Transaction Approved</HelpText>
+             </Txn>
+             """)
+        self.assertEquals('Transaction Approved', r.get_message())
+
+    def test_get_message_returns_generic_message_when_no_response(self):
+        r = Response('', '')
+        message = r.get_message()
+        self.assertTrue(message is not None and message != '')
 
 
 class SuccessfulResponseTests(TestCase):
@@ -68,16 +106,94 @@ class SuccessfulResponseTests(TestCase):
     def test_is_successful_returns_true(self):
         self.assertTrue(self.response.is_successful())
 
-    def test_get_message(self):
+    def test_get_message_is_not_empty(self):
         self.assertTrue(self.response.get_message() is not None)
         self.assertTrue(self.response.get_message() != '')
 
-    def test_dict_access(self):
+    def test_response_data_has_dict_access(self):
         self.assertEquals(1, self.response['authorised'])
         self.assertEquals(1, self.response['success'])
 
-    def test_response_text_approved(self):
+    def test_response_text_is_approved_when_transaction_is_successful(self):
         self.assertEquals('APPROVED', self.response['response_text'])
+
+
+class ApiResponseTests(MockedResponseTestCase):
+
+    def setUp(self):
+        self.gateway = Gateway(
+            post_url='https://sec.paymentexpress.com/pxpost.aspx',
+            username='TestUsername',
+            password='TestPassword',
+            currency='AUD')
+
+    def test_authorise_returns_response(self):
+        with patch('requests.post') as post:
+            post.return_value = self.create_mock_response(
+                SAMPLE_SUCCESSFUL_RESPONSE
+            )
+            self.assertIsInstance(
+                self.gateway.authorise(card_holder='Frankie',
+                                       card_number=CARD_VISA,
+                                       cvc2='123',
+                                       amount=1.23), Response
+            )
+
+    def test_complete_returns_response(self):
+        with patch('requests.post') as post:
+            post.return_value = self.create_mock_response(
+                SAMPLE_SUCCESSFUL_RESPONSE)
+            self.assertIsInstance(
+                self.gateway.complete(dps_txn_ref='1234', amount=1.23, ),
+                Response)
+
+    def test_purchase_with_billing_id_returns_response(self):
+        with patch('requests.post') as post:
+            post.return_value = self.create_mock_response(
+                SAMPLE_SUCCESSFUL_RESPONSE
+            )
+            self.assertIsInstance(
+                self.gateway.purchase(billing_id='123', amount=1.23), Response
+            )
+
+    def test_purchase_with_bankcard_returns_response(self):
+        with patch('requests.post') as post:
+            post.return_value = self.create_mock_response(
+                SAMPLE_SUCCESSFUL_RESPONSE
+            )
+            self.assertIsInstance(
+                self.gateway.purchase(card_holder='Frankie',
+                                      card_number=CARD_VISA,
+                                      card_expiry='1015',
+                                      cvc2='123',
+                                      merchant_ref='abc123',
+                                      enable_add_bill_card=1,
+                                      amount=1.23), Response
+                )
+
+    def test_refund_returns_response(self):
+        with patch('requests.post') as post:
+            post.return_value = self.create_mock_response(
+                SAMPLE_SUCCESSFUL_RESPONSE
+            )
+            self.assertIsInstance(
+                self.gateway.refund(dps_txn_ref='1234',
+                                    merchant_ref='abc123',
+                                    amount=1.23), Response
+                )
+
+    def test_validate_returns_response(self):
+        with patch('requests.post') as post:
+            post.return_value = self.create_mock_response(
+                SAMPLE_SUCCESSFUL_RESPONSE
+            )
+            self.assertIsInstance(
+                self.gateway.validate(card_holder='Frankie',
+                                      card_number=CARD_VISA,
+                                      cvc2='123',
+                                      card_expiry='1015',
+                                      amount=1.23), Response
+                )
 
 
 class DeclinedResponseTests(TestCase):
@@ -101,9 +217,11 @@ class GatewayTests(TestCase):
 
     def test_raises_error_on_missing_fields(self):
         with self.assertRaises(ValueError):
-            self.gateway.authorise(card_holder='Frankie',
-                                   card_number='5111222233334444',
-                                   amount=1.23)
+            self.gateway.authorise(
+                card_holder='Frankie',
+                card_number='5111222233334444',
+                amount=1.23
+            )
 
     def test_does_not_raise_error_when_all_fields_set(self):
         r = Request('TangentSnowball', 's3cr3t', 'AUD', 'Purchase', 1.23)
@@ -111,10 +229,12 @@ class GatewayTests(TestCase):
         self.assertIsInstance(doc, Document)
 
     def test_authorise_fields_set(self):
-        self.gateway.authorise(card_holder='Frankie',
-                               card_number='5111222233334444',
-                               cvc2='123',
-                               amount=1.23)
+        self.gateway.authorise(
+            card_holder='Frankie',
+            card_number='5111222233334444',
+            cvc2='123',
+            amount=1.23
+        )
         with self.assertRaises(ValueError):
             self.gateway.authorise()
 
@@ -145,10 +265,10 @@ class GatewayTests(TestCase):
 
     def test_card_expiry_has_four_digits(self):
         self.gateway.validate(card_holder="Frankie",
-                                  card_number=CARD_VISA,
-                                  cvc2="123",
-                                  card_expiry="1015",
-                                  amount=1.00)
+                              card_number=CARD_VISA,
+                              cvc2="123",
+                              card_expiry="1015",
+                              amount=1.00)
         with self.assertRaises(ValueError):
             self.gateway.validate(card_holder="Frankie",
                                   card_number=CARD_VISA,
@@ -160,4 +280,4 @@ class GatewayTests(TestCase):
         gateway = Gateway('http://localhost/', 'TangentSnowball',
             's3cr3t', 'au')
         with self.assertRaises(ValueError):
-            gateway.refund(dps_txn_ref="abc", merchant_ref="123")
+            gateway.refund(dps_txn_ref="abc", merchant_ref="123", amount=1.23)
