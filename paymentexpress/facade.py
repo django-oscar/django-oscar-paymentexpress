@@ -69,17 +69,25 @@ class Facade(object):
         else:
             raise InvalidGatewayRequestError(response.get_message())
 
+    def _format_card_date(self, str_date):
+        # Dirty hack so that Oscar's BankcardForm doesn't need to be overridden
+        return str_date.replace('/', '')
+
     def authorise(self, order_number, amount, bankcard):
         """
         Authorizes a transaction.
         Must be completed within 7 days using the "Complete" TxnType
         """
         self._check_amount(amount)
+
+        card_issue_date = self._format_card_date(bankcard.start_date)
+        card_expiry_date = self._format_card_date(bankcard.expiry_date)
+
         merchant_ref = self._get_merchant_reference(order_number, AUTH)
         res = self.gateway.authorise(card_holder=bankcard.card_holder_name,
                                      card_number=bankcard.card_number,
-                                     card_expiry=bankcard.expiry_date,
-                                     card_issue_date=bankcard.start_date,
+                                     card_issue_date=card_issue_date,
+                                     card_expiry=card_expiry_date,
                                      cvc2=bankcard.cvv,
                                      amount=amount,
                                      merchant_ref=merchant_ref)
@@ -112,11 +120,13 @@ class Facade(object):
                                         billing_id=billing_id,
                                         merchant_ref=merchant_ref)
         elif bankcard:
+            card_issue_date = self._format_card_date(bankcard.start_date)
+            card_expiry_date = self._format_card_date(bankcard.expiry_date)
             res = self.gateway.purchase(amount=amount,
                                         card_holder=bankcard.card_holder_name,
                                         card_number=bankcard.card_number,
-                                        card_expiry=bankcard.expiry_date,
-                                        card_issue_date=bankcard.start_date,
+                                        card_issue_date=card_issue_date,
+                                        card_expiry=card_expiry_date,
                                         cvc2=bankcard.cvv,
                                         merchant_ref=merchant_ref,
                                         enable_add_bill_card=1)
@@ -146,11 +156,14 @@ class Facade(object):
         automatically add to Billing Database if the transaction is approved.
         """
         amount = 1.00
+        card_issue_date = self._format_card_date(bankcard.start_date)
+        card_expiry_date = self._format_card_date(bankcard.expiry_date)
+
         res = self.gateway.validate(amount=amount,
                                     card_holder=bankcard.card_holder_name,
                                     card_number=bankcard.card_number,
-                                    card_expiry=bankcard.expiry_date,
-                                    card_issue_date=bankcard.start_date,
+                                    card_issue_date=card_issue_date,
+                                    card_expiry=card_expiry_date,
                                     cvc2=bankcard.cvv,
                                     enable_add_bill_card=1)
         return self._handle_response(VALIDATE, None, amount, res)
