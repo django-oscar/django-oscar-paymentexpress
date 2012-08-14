@@ -71,6 +71,8 @@ class Facade(object):
 
     def _format_card_date(self, str_date):
         # Dirty hack so that Oscar's BankcardForm doesn't need to be overridden
+        if str_date is None:
+            return None
         return str_date.replace('/', '')
 
     def authorise(self, order_number, amount, bankcard):

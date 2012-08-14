@@ -223,6 +223,7 @@ class Gateway(object):
             if key == 'amount' and value == 0:
                 raise ValueError('Amount must be non-zero')
             if key in ('card_issue_date', 'card_expiry') \
+                and value is not None \
                 and not re.match(r'^(0[1-9]|1[012])([0-9]{2})$', value):
                 raise ValueError('%s must be in format mmyy' % key)
 
