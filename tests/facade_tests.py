@@ -110,6 +110,16 @@ class FacadeSuccessfulResponseTests(MockedResponseTestCase):
             txn = OrderTransaction.objects.filter(order_number='10001')[0]
             self.assertEquals(AUTH, txn.txn_type)
 
+    def test_empty_issue_date_is_allowed(self):
+        with patch('requests.post') as post:
+            post.return_value = self.create_mock_response(
+                SAMPLE_SUCCESSFUL_RESPONSE)
+            card = Bankcard(card_number=CARD_VISA,
+                            expiry_date='1015',
+                            name="Frankie", cvv="123")
+            txn_ref = self.facade.authorise('1000', 1.23, card)
+            self.assertEquals(self.dps_txn_ref, txn_ref['txn_reference'])
+
 
 class FacadeDeclinedResponseTests(MockedResponseTestCase):
 
