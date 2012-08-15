@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 import sys
-import os
 from coverage import coverage
 from optparse import OptionParser
 
-from django.conf import settings, global_settings
+from django.conf import settings
 
 if not settings.configured:
     paymentexpress_settings = {}

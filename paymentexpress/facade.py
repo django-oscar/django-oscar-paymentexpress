@@ -4,7 +4,6 @@ from paymentexpress.gateway import (
 )
 from paymentexpress.models import OrderTransaction
 
-from oscar.apps.payment.utils import Bankcard
 from oscar.apps.payment.exceptions import (UnableToTakePayment,
                                            InvalidGatewayRequestError)
 import random

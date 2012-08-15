@@ -2,7 +2,7 @@ from django.test import TestCase
 from mock import Mock, patch
 
 from paymentexpress.facade import Facade
-from paymentexpress.gateway import Response, AUTH, PURCHASE
+from paymentexpress.gateway import AUTH, PURCHASE
 from paymentexpress.models import OrderTransaction
 from tests import (XmlTestingMixin, CARD_VISA, SAMPLE_SUCCESSFUL_RESPONSE,
                    SAMPLE_DECLINED_RESPONSE, SAMPLE_ERROR_RESPONSE)
@@ -159,7 +159,7 @@ class FacadeDeclinedResponseTests(MockedResponseTestCase):
                 SAMPLE_DECLINED_RESPONSE)
             try:
                 self.facade.purchase('1001', 10.24, None, self.card)
-            except Exception, e:
+            except Exception:
                 pass
             txn = OrderTransaction.objects.filter(order_number='1001')[0]
             self.assertIsNotNone(txn)

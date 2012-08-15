@@ -1,5 +1,4 @@
 from xml.dom.minidom import parseString, Document
-from xml.parsers.expat import ExpatError
 import requests
 import re
 
