@@ -2,7 +2,10 @@
 PaymentExpress package for django-oscar
 =======================================
 
-This package provides integration with the payment gateway, PaymentExpress using their PX POST API. It is designed to work seamlessly with the e-commerce framework `django-oscar` but can be used without it.
+This package provides integration with the payment gateway, PaymentExpress using their `PX POST API`_. It is designed to work seamlessly with the e-commerce framework `django-oscar`_ but can be used without it.
+
+.. _`PX Post API`: http://sec.paymentexpress.com/technical_resources/ecommerce_nonhosted/pxpost.html
+.. _`django-oscar`: https://github.com/tangentlabs/django-oscar
 
 Installation
 ------------
