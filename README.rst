@@ -152,6 +152,18 @@ Facade
 The class ``paymentexpress.facade.Facade`` wraps the above gateway object and provides a less granular API, as well as saving instances of ``paymentexpress.models.OrderTransaction`` to provide an audit trail for PaymentExpress activity.
 
 
+Settings
+========
+
+* ``PAYMENTEXPRESS_POST_URL`` - PX POST URL
+
+* ``PAYMENTEXPRESS_USERNAME`` - Username
+
+* ``PAYMENTEXPRESS_PASSWORD`` - Password
+
+* ``PAYMENTEXPRESS_CURRENCY`` - Currency to use for transactions
+
+
 Contributing
 ============
 
@@ -173,14 +185,3 @@ http://www.paymentexpress.com/knowledge_base/faq/developer_faq.html#Testing%20De
 Sample VISA vard:
 
     4111111111111111
-
-Settings
-========
-
-* ``PAYMENTEXPRESS_POST_URL`` - PX POST URL
-
-* ``PAYMENTEXPRESS_USERNAME`` - Username
-
-* ``PAYMENTEXPRESS_PASSWORD`` - Password
-
-* ``PAYMENTEXPRESS_CURRENCY`` - Currency to use for transactions
