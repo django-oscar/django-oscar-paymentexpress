@@ -263,7 +263,7 @@ class Gateway(object):
         """
         Purchase - Funds are transferred immediately.
         """
-        if kwargs.get('billing_id') is None:
+        if kwargs.get('dps_billing_id') is None:
             return self._purchase_on_new_card(**kwargs)
         return self._purchase_on_existing_card(**kwargs)
 
@@ -275,7 +275,7 @@ class Gateway(object):
         return self._fetch_response(request)
 
     def _purchase_on_existing_card(self, **kwargs):
-        request = self._get_request(PURCHASE, kwargs, ['billing_id'])
+        request = self._get_request(PURCHASE, kwargs, ['dps_billing_id'])
         return self._fetch_response(request)
 
     def validate(self, **kwargs):

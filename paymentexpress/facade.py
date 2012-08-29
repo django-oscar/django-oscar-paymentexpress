@@ -118,7 +118,7 @@ class Facade(object):
 
         if billing_id:
             res = self.gateway.purchase(amount=amount,
-                                        billing_id=billing_id,
+                                        dps_billing_id=billing_id,
                                         merchant_ref=merchant_ref)
         elif bankcard:
             card_issue_date = self._format_card_date(bankcard.start_date)
