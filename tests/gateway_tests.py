@@ -153,7 +153,7 @@ class ApiResponseTests(MockedResponseTestCase):
                 SAMPLE_SUCCESSFUL_RESPONSE
             )
             self.assertIsInstance(
-                self.gateway.purchase(billing_id='123', amount=1.23), Response
+                self.gateway.purchase(dps_billing_id='123', amount=1.23), Response
             )
 
     def test_purchase_with_bankcard_returns_response(self):
