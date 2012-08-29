@@ -2,7 +2,7 @@
 from setuptools import setup, find_packages
 
 setup(name='django-oscar-paymentexpress',
-      version='0.1',
+      version='0.1.1',
       url='https://github.com/tangentlabs/django-oscar-paymentexpress',
       author="Francis Reyes",
       author_email="francis.reyes@tangentsnowball.com.au",
